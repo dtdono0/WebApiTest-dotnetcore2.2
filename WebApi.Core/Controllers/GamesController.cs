@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using WebApi.Core.Contexts;
 using WebApi.Core.Models;
 
@@ -15,16 +17,40 @@ namespace WebApi.Core.Controllers
     public class GamesController : ControllerBase
     {
         private readonly GamesContext _context;
+        private readonly IConfiguration _config;
 
-        public GamesController(GamesContext context)
+        public GamesController(GamesContext context, IConfiguration configuration)
         {
             _context = context;
+            _config = configuration;
         }
 
         // GET: api/Games
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Game>>> GetGame()
         {
+            // Test to read data from appsettings.json in a controller
+            var appSettings = _config.GetSection("AppSettings");
+            Debug.WriteLine("AppSettings.Key : " + appSettings.Key);
+            Debug.WriteLine("MainGame : " + _config.GetValue<string>("AppSettings:MainGame"));
+
+            Debug.WriteLine("MainBad : " + _config.GetValue<string>("AppSettings:BadGames:MainBad"));
+            Debug.WriteLine("AltBad : " + _config.GetValue<string>("AppSettings:BadGames:AltBad"));
+            Debug.WriteLine("---------------");
+            
+            foreach (KeyValuePair<string, string> pair in appSettings.GetSection("BadGames").AsEnumerable())
+            {
+                Debug.WriteLine(@"key : {0} value : {1}", pair.Key, pair.Value);
+            }
+            Debug.WriteLine("---------------");
+
+            foreach (IConfigurationSection section in appSettings.GetChildren())
+            {
+                foreach (KeyValuePair<string, string> pair in section.AsEnumerable()) {
+                    Debug.WriteLine(@"key : {0} value : {1}", pair.Key, pair.Value);
+                }
+            }
+            
             return await _context.Game.ToListAsync();
         }
 
